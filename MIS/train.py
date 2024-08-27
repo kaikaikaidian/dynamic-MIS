@@ -32,8 +32,8 @@ def create_output_target(cmp, list_datasamples, batch_size, ind, device):
     #     output_vet = torch.cat((output_vet, output), dim=0)
     #     target_vet = torch.cat((target_vet, target), dim=0)
     #     ind += 1
-    G1 = list_datasamples[ind].G1
-    G2 = list_datasamples[ind].G2
+    G1 = list_datasamples[ind : ind + batch_size].G1
+    G2 = list_datasamples[ind : ind + batch_size].G2
     data_1 = from_networkx(G1)
     data_2 = from_networkx(G2)
     X = torch.cat((torch.ones(data_1.num_nodes, 1), torch.ones(data_2.num_nodes, 1)), dim=0).repeat_interleave(batch_size).view(-1, 1).to(device)
@@ -46,6 +46,7 @@ def create_output_target(cmp, list_datasamples, batch_size, ind, device):
     output_vet = cmp.fast_forward(X, edge_index, batch)
     target_vet = list_datasamples[ind].target.repeat(batch_size, 1)
     ind += 1
+    breakpoint()
     return output_vet, target_vet, ind
 
 def calculate_accuracy(target_vet, output_vet):
@@ -92,6 +93,7 @@ def train_dataset(cmp, epochs_roll_out, optimizer, criterion, batch_size, buf, r
                 output_vet, target_vet, ind = create_output_target(cmp, list_dataset, batch_size, ind, device)
 
                 loss = criterion(output_vet, target_vet)
+                # print(loss)
 
                 loss_epoch += loss.item()
                 accuracy_,den_ = calculate_accuracy(target_vet, output_vet)
