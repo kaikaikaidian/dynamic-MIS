@@ -11,26 +11,41 @@ import os
 import pickle
 import numpy as np
 from recursive_tree import create_dataset_buffer
+from torch_geometric.utils import from_networkx
 
 
 def create_output_target(cmp, list_datasamples, batch_size, ind, device):
+    # G1 = list_datasamples[ind].G1
+    # G2 = list_datasamples[ind].G2
+    # G1_matrix = torch.tensor(nx.adjacency_matrix(G1).todense(), dtype=torch.float).to(device)
+    # G2_matrix = torch.tensor(nx.adjacency_matrix(G2).todense(), dtype=torch.float).to(device)
+    # output_vet = cmp.forward(G1_matrix, G2_matrix, device)
+    # target_vet = list_datasamples[ind].target
+    # ind += 1
+    # for i in range(1, batch_size):
+    #     G1 = list_datasamples[ind].G1
+    #     G2 = list_datasamples[ind].G2
+    #     G1_matrix = torch.tensor(nx.adjacency_matrix(G1).todense(), dtype=torch.float).to(device)
+    #     G2_matrix = torch.tensor(nx.adjacency_matrix(G2).todense(), dtype=torch.float).to(device)
+    #     output = cmp.forward(G1_matrix, G2_matrix, device)
+    #     target = list_datasamples[ind].target
+    #     output_vet = torch.cat((output_vet, output), dim=0)
+    #     target_vet = torch.cat((target_vet, target), dim=0)
+    #     ind += 1
     G1 = list_datasamples[ind].G1
     G2 = list_datasamples[ind].G2
-    G1_matrix = torch.tensor(nx.adjacency_matrix(G1).todense(), dtype=torch.float).to(device)
-    G2_matrix = torch.tensor(nx.adjacency_matrix(G2).todense(), dtype=torch.float).to(device)
-    output_vet = cmp.forward(G1_matrix, G2_matrix, device)
-    target_vet = list_datasamples[ind].target
+    data_1 = from_networkx(G1)
+    data_2 = from_networkx(G2)
+    X = torch.cat((torch.ones(data_1.num_nodes, 1), torch.ones(data_2.num_nodes, 1)), dim=0).repeat_interleave(batch_size).view(-1, 1).to(device)
+    edge_index = torch.cat((data_1.edge_index, data_2.edge_index + data_1.num_nodes), dim=1)
+    edge_index = edge_index.repeat(1, batch_size) + torch.arange(0, batch_size).repeat_interleave(edge_index.size(1))
+    edge_index = edge_index.to(device)
+    batch = torch.cat((torch.zeros(data_1.num_nodes, dtype=torch.int64), torch.ones(data_2.num_nodes, dtype=torch.int64)))
+    batch = batch.repeat_interleave(batch_size) + torch.arange(0, batch_size).repeat_interleave(batch.size(0)) * 2
+    batch = batch.to(device)
+    output_vet = cmp.fast_forward(X, edge_index, batch)
+    target_vet = list_datasamples[ind].target.repeat(batch_size, 1)
     ind += 1
-    for i in range(1, batch_size):
-        G1 = list_datasamples[ind].G1
-        G2 = list_datasamples[ind].G2
-        G1_matrix = torch.tensor(nx.adjacency_matrix(G1).todense(), dtype=torch.float).to(device)
-        G2_matrix = torch.tensor(nx.adjacency_matrix(G2).todense(), dtype=torch.float).to(device)
-        output = cmp.forward(G1_matrix, G2_matrix, device)
-        target = list_datasamples[ind].target
-        output_vet = torch.cat((output_vet, output), dim=0)
-        target_vet = torch.cat((target_vet, target), dim=0)
-        ind += 1
     return output_vet, target_vet, ind
 
 def calculate_accuracy(target_vet, output_vet):

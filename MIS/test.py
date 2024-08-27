@@ -20,6 +20,7 @@ def test_dataset(cmp_buffer, device, D, dataset_name, optimum_mips=None, dataset
     
     list_G = load_benchmark_data(dataset_name, idxs=(idx0, idx1),dataset_path=dataset_path)
 
+    
     gur_solver = pywraplp.Solver.CreateSolver('GUROBI')
 
     list_random = []

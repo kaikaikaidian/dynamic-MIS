@@ -34,7 +34,8 @@ def train_MIS(D, gnn_depth, dense_depth, dataset_name,batch_size, dim_datasample
     print(device)
     
 
-    cmp = model.Comparator(D, device, gnn_depth, dense_depth)
+    # cmp = model.Comparator(D, device, gnn_depth, dense_depth)
+    cmp = model.agent_cmp(D)
     cmp.to(device)
 
     criterion = nn.CrossEntropyLoss()
@@ -48,8 +49,8 @@ def train_MIS(D, gnn_depth, dense_depth, dataset_name,batch_size, dim_datasample
     dim_dataset = at each iteration, that number of datasamples are trained
     root_graphs_per_iteration = total number of root graphs from which, at each iteration, datasamples are generated
     '''
-
-    dataset_path = get_path_from_dataset_name(dataset_name)
+    # dataset_path = get_path_from_dataset_name(dataset_name)
+    dataset_path = None
     list_G = load_benchmark_data(dataset_name, dataset_path=dataset_path, idxs=(idx0, idx1))
 
     if idx0_validation != -1:
@@ -71,8 +72,10 @@ def test_MIS(dataset_name, model_path,model_name,D, gnn_depth,dense_depth):
 
     dataset_path = get_path_from_dataset_name(dataset_name)
 
-    cmp_buffer = model.Comparator(D, device, num_dense_layers=dense_depth, num_gnn_layers=gnn_depth)
-    load(cmp_buffer, os.path.join(model_path,model_name), device)
+    # cmp_buffer = model.Comparator(D, device, num_dense_layers=dense_depth, num_gnn_layers=gnn_depth)
+    cmp_buffer = model.agent_cmp(D)
+    load(cmp_buffer, model_path, device)
+    cmp_buffer = cmp_buffer.to(device)
     cmp_buffer.eval()
 
     in_file_name = 'OPTIMA_' + str(dataset_name) + '.pickle'

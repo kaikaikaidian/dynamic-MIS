@@ -7,20 +7,25 @@ import torch
 from tqdm import tqdm
 
 def load_benchmark_data(dataset_name, dataset_path=None, idxs=(0, 100)):
-    if dataset_name == "TWITTER_SNAP":
-        if dataset_path is None:
-            raise Exception("dataset_path cannot be None when using the TWITTER_SNAP dataset!")
-        stored_dataset = open(dataset_path, 'rb')
-        dataset = pickle.load(stored_dataset)
-        stored_dataset.close()
-    elif dataset_name == "COLLAB" or dataset_name == 'SPECIAL' or dataset_name == 'RB':
-        if dataset_path is None:
-            raise Exception("dataset_path cannot be None when using the COLLAB dataset!")
-        stored_dataset = open(dataset_path, 'rb')
-        dataset = pickle.load(stored_dataset)
-        return dataset[idxs[0]:idxs[1]]
-    else:
-        raise Exception("The provided dataset_name is not allowed")
+    class MyFilter(object):
+        def __call__(self, data):
+            return True
+    tudataset_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data',dataset_name)
+    dataset = TUDataset(tudataset_path, name=dataset_name, pre_filter=MyFilter())
+    # if dataset_name == "TWITTER_SNAP":
+    #     if dataset_path is None:
+    #         raise Exception("dataset_path cannot be None when using the TWITTER_SNAP dataset!")
+    #     stored_dataset = open(dataset_path, 'rb')
+    #     dataset = pickle.load(stored_dataset)
+    #     stored_dataset.close()
+    # elif dataset_name == "COLLAB" or dataset_name == 'SPECIAL' or dataset_name == 'RB':
+    #     if dataset_path is None:
+    #         raise Exception("dataset_path cannot be None when using the COLLAB dataset!")
+    #     stored_dataset = open(dataset_path, 'rb')
+    #     dataset = pickle.load(stored_dataset)
+    #     return dataset[idxs[0]:idxs[1]]
+    # else:
+    #     raise Exception("The provided dataset_name is not allowed")
 
     list_G_big = []
     for i in tqdm(range(idxs[0], idxs[1])):
