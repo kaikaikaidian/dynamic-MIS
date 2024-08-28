@@ -32,21 +32,41 @@ def create_output_target(cmp, list_datasamples, batch_size, ind, device):
     #     output_vet = torch.cat((output_vet, output), dim=0)
     #     target_vet = torch.cat((target_vet, target), dim=0)
     #     ind += 1
-    G1 = list_datasamples[ind : ind + batch_size].G1
-    G2 = list_datasamples[ind : ind + batch_size].G2
+    target_vet = list_datasamples[ind].target
+    G1 = list_datasamples[ind].G1
+    G2 = list_datasamples[ind].G2
     data_1 = from_networkx(G1)
     data_2 = from_networkx(G2)
-    X = torch.cat((torch.ones(data_1.num_nodes, 1), torch.ones(data_2.num_nodes, 1)), dim=0).repeat_interleave(batch_size).view(-1, 1).to(device)
-    edge_index = torch.cat((data_1.edge_index, data_2.edge_index + data_1.num_nodes), dim=1)
-    edge_index = edge_index.repeat(1, batch_size) + torch.arange(0, batch_size).repeat_interleave(edge_index.size(1))
-    edge_index = edge_index.to(device)
-    batch = torch.cat((torch.zeros(data_1.num_nodes, dtype=torch.int64), torch.ones(data_2.num_nodes, dtype=torch.int64)))
-    batch = batch.repeat_interleave(batch_size) + torch.arange(0, batch_size).repeat_interleave(batch.size(0)) * 2
-    batch = batch.to(device)
-    output_vet = cmp.fast_forward(X, edge_index, batch)
-    target_vet = list_datasamples[ind].target.repeat(batch_size, 1)
+    X = torch.cat((torch.ones(data_1.num_nodes, 1), torch.ones(data_2.num_nodes, 1)), dim=0).view(-1, 1)
+    Edge_index = torch.cat((data_1.edge_index, data_2.edge_index + data_1.num_nodes), dim=1)
+    Edge_index = Edge_index
+    Batch = torch.cat((torch.zeros(data_1.num_nodes, dtype=torch.int64), torch.ones(data_2.num_nodes, dtype=torch.int64)))
+
     ind += 1
-    breakpoint()
+    for i in range(1, batch_size):
+        G1 = list_datasamples[ind].G1
+        G2 = list_datasamples[ind].G2
+        data_1 = from_networkx(G1)
+        data_2 = from_networkx(G2)
+
+        x = torch.cat((torch.ones(data_1.num_nodes, 1), torch.ones(data_2.num_nodes, 1)), dim=0).view(-1, 1)
+        
+        edge_index = torch.cat((data_1.edge_index, data_2.edge_index + data_1.num_nodes), dim=1) + X.size(0)
+        Edge_index = torch.cat((Edge_index, edge_index), dim=1)
+        X = torch.cat((X, x), dim=0)
+        batch = torch.cat((torch.zeros(data_1.num_nodes, dtype=torch.int64), torch.ones(data_2.num_nodes, dtype=torch.int64)), dim=0) + i * 2
+        Batch = torch.cat((Batch, batch), dim=0)
+
+        target = list_datasamples[ind].target
+        target_vet = torch.cat((target_vet, target), dim=0)
+        ind += 1
+    X = X.to(device)
+    Edge_index = Edge_index.to(device)    
+    Batch = Batch.to(device)
+    output_vet = cmp.fast_forward(X, Edge_index, Batch)
+
+
+    # breakpoint()
     return output_vet, target_vet, ind
 
 def calculate_accuracy(target_vet, output_vet):
